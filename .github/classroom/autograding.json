@@ -1,0 +1,54 @@
+{
+  "tests": [
+    {
+      "name": "Maximum acetate Yield mol",
+      "setup": "",
+      "run": "pytest assignment.py -k 'test_maximum_acetate_yield_mol'",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 20
+    },
+    {
+      "name": "Maximum acetate Yield c-mol",
+      "setup": "",
+      "run": "pytest assignment.py -k 'test_maximum_acetate_yield_cmol'",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 20
+    },
+    {
+      "name": "Model degrees of freedom",
+      "setup": "",
+      "run": "pytest assignment.py -k 'test_degrees_of_freedom'",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 20
+    },
+    {
+      "name": "Growth reduction - overexpresion of fumerase",
+      "setup": "",
+      "run": "pytest assignment.py -k 'test_growth_reduction'",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 20
+    },
+    {
+      "name": "Genes essential only in acetate conditions but not glucose",
+      "setup": "",
+      "run": "pytest assignment.py -k 'test_essential_only_in_acetate'",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 20
+    }
+  ]
+}
