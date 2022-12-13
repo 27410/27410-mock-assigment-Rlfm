@@ -1,6 +1,7 @@
-###### Ignore this
+#%% coucou
 import pytest
 import hashlib
+
 _ = 123456789  # just a wrong number, please ignore
 ###### Stop ignoring
 
@@ -35,8 +36,9 @@ model.medium = medium
 
 # Replace _ with you're final calculation step or a variable that contains the final solution.
 # maximum_acetate_yield_mol needs to resolve to a positive floating point number
-maximum_acetate_yield_mol = _
-
+with model:
+    model.objective = "EX_ac_e"
+    maximum_acetate_yield_mol = abs(model.optimize().fluxes["EX_ac_e"]) / abs(model.optimize().fluxes["EX_glc__D_e"])
 
 # 2. Based on the model, what is the theoretical maximum yield of acetate in units of
 #    cmol-acetate/cmol-glucose?
@@ -48,7 +50,11 @@ maximum_acetate_yield_mol = _
 
 # Replace _ with you're final calculation step or a variable that contains the final solution.
 # maximum_acetate_yield_cmol needs to resolve to a positive floating point number
-maximum_acetate_yield_cmol = _
+
+C_ac = int(model.metabolites.ac_e.formula.split("C")[1][0])
+C_glc = int(model.metabolites.glc__D_e.formula.split("C")[1][0])
+
+maximum_acetate_yield_cmol = maximum_acetate_yield_mol * C_ac/C_glc
 
 
 # 3. Based on the model's stoichiometry alone, how many reaction fluxes need to be measured
@@ -60,12 +66,11 @@ maximum_acetate_yield_cmol = _
 
 # Put your intermediate solution steps here if you have any ...
 
-
 # Replace _ with you're final calculation step or a variable that contains the final solution.
 # degrees_of_freedom needs to be an integer number.
 
-degrees_of_freedom = _
-
+S = create_stoichiometric_matrix(model)
+degrees_of_freedom = len(model.reactions) - np.linalg.matrix_rank(S)
 
 # 4. How much is the (optimal) growth rate reduced if fumarase (FUM in the model) is
 #    overexpressed to have a 2-fold higher flux in comparison to its flux at maximum growth rate?
@@ -80,9 +85,17 @@ degrees_of_freedom = _
 # Replace _ with you're final calculation step or a variable that contains the final solution.
 # growth_reduction needs to be a floating point number that corresponds to
 # optimal_growth - growth_fum_overexpression
+for r in model.exchanges:
+    #print(f"{r.id} {[x.name for x in r.metabolites]} {model.optimize().fluxes[r.id]}")
+    pass
 
-growth_reduction = _
+with model:
 
+    WT_biomass_flux = model.optimize().objective_value
+    WT_FUM_flux = model.optimize().fluxes["FUM"]
+    model.reactions.FUM.bounds = 2*WT_FUM_flux,2*WT_FUM_flux
+    new_FUM_flux = model.optimize().fluxes["EX_fum_e"]
+    growth_reduction = WT_biomass_flux - model.optimize().objective_value 
 
 # 5. What genes are essential under acetate conditions but not glucose conditions?
 # Hints:
@@ -100,27 +113,53 @@ growth_reduction = _
 
 # Put your intermediate solution steps here if you have any ...
 
-    
+GLC_essentials = list()
+for gene in model.genes:
+    with model:
+        model.genes.get_by_id(gene.id).knock_out()
+        if model.slim_optimize(error_value=0.) < 0.05:
+            #print(f"{gene.id=} {model.slim_optimize(error_value=0.)=}")
+            GLC_essentials.append(gene.id)
+
+AC_essentials = list()
+for gene in model.genes:
+    with model:
+        medium = model.medium
+        medium["EX_glc__D_e"] = 0
+        medium["EX_ac_e"] = 10
+        model.medium = medium
+
+        model.genes.get_by_id(gene.id).knock_out()        
+        if model.slim_optimize(error_value=0.) < 0.05:
+            AC_essentials.append(gene.id)
+
+
 # Replace _ with you're final calculation step or a variable that contains the final solution.
 # essential_only_in_acetate needs to resolve to a set of gene IDs of type str ({'b2286', 'b2287', ...})
-essential_only_in_acetate = _
-
+essential_only_in_acetate = set(AC_essentials).difference(set(GLC_essentials))
 
 #### Tests are happening in the end now ...
 ###### Don't touch
 
 def test_maximum_acetate_yield_mol():
     assert maximum_acetate_yield_mol == pytest.approx(2.)
-    
+test_maximum_acetate_yield_mol()
+
 def test_maximum_acetate_yield_cmol():
     assert maximum_acetate_yield_cmol == pytest.approx(0.6666666666666666)
+test_maximum_acetate_yield_cmol()
 
 def test_degrees_of_freedom():
     assert degrees_of_freedom == 28
+test_degrees_of_freedom()
 
 def test_growth_reduction():
     assert growth_reduction == pytest.approx(0.2244331576552907)
+test_growth_reduction()
 
 def test_essential_only_in_acetate():
     assert essential_only_in_acetate == {'b2286', 'b2287', 'b3737', 'b2282', 'b2281', 'b2283', 'b3731', 'b2279', 'b3919', 'b3735', 'b3734', 'b3736', 'b0722', 's0001', 'b2277', 'b2288', 'b3732', 'b3738', 'b2284', 'b0721', 'b2278', 'b4025', 'b0723', 'b0724', 'b2285', 'b2280', 'b4015', 'b3733', 'b2276'}
+test_essential_only_in_acetate()
 ###### this
+
+# %%
